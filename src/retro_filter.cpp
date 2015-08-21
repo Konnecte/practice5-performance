@@ -1,6 +1,10 @@
 #include "retro_filter.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "time.h"
+#include <ctime>
+
+#define hsvScale_ 1
+#define hsvOffset_ 20
 
 using namespace std;
 using namespace cv;
@@ -30,8 +34,8 @@ RetroFilter::RetroFilter(const Parameters& params) : rng_(time(0))
         resize(params_.scratches, params_.scratches, params_.frameSize);
     }
 
-    hsvScale_ = 1;
-    hsvOffset_ = 20;
+   // hsvScale_ = 1;
+    //hsvOffset_ = 20;
 }
 
 void RetroFilter::applyToVideo(const Mat& frame, Mat& retroFrame)
@@ -46,9 +50,11 @@ void RetroFilter::applyToVideo(const Mat& frame, Mat& retroFrame)
     int x = rng_.uniform(0, params_.scratches.cols - luminance.cols);
     int y = rng_.uniform(0, params_.scratches.rows - luminance.rows);
 
-    for (row = 0; row < luminance.size().height; row += 1)
+    int height=luminance.size().height;
+    int width=luminance.size().width;
+    for (row = 0; row < height; row++)
     {
-        for (col = 0; col < luminance.size().width; col += 1)
+        for (col = 0; col < width; col++)
         {
             uchar pix_color = params_.scratches.at<uchar>(row + y, col + x) ? (int)scratchColor.at<uchar>(row, col) : luminance.at<uchar>(row, col);
             luminance.at<uchar>(row, col) = pix_color;
@@ -64,13 +70,16 @@ void RetroFilter::applyToVideo(const Mat& frame, Mat& retroFrame)
     retroFrame.create(luminance.size(), CV_8UC3);
     Mat hsv_pixel(1, 1, CV_8UC3);
     Mat rgb_pixel(1, 1, CV_8UC3);
-    for (col = 0; col < luminance.size().width; col += 1)
+
+    hsv_pixel.ptr()[0] = 19;
+    hsv_pixel.ptr()[1] = 78;
+
+    for (col = 0; col < width; col++)
     {
-        for (row = 0; row < luminance.size().height; row += 1)
+        for (row = 0; row < height; row++)
         {
             hsv_pixel.ptr()[2] = cv::saturate_cast<uchar>(luminance.at<uchar>(row, col) * hsvScale_ + hsvOffset_);
-            hsv_pixel.ptr()[0] = 19;
-            hsv_pixel.ptr()[1] = 78;
+
 
             cvtColor(hsv_pixel, rgb_pixel, CV_HSV2RGB);
 
